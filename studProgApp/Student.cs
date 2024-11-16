@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace studProgApp
 {
-    public class SearchParameters
+    public class Student
     {
         public string Name { get; set; }
         public string Faculty { get; set; }

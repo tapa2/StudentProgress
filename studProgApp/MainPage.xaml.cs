@@ -1,4 +1,5 @@
 ﻿using studProgApp.ParsingStrategy;
+using System.Runtime.Serialization;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -98,40 +99,88 @@ namespace studProgApp
             }
         }
 
-        private SearchParameters GetSearchParameters()
+        private Student GetSearchParameters()
         {
-            return new SearchParameters
+            return new Student
             {
                 Name = string.IsNullOrWhiteSpace(NameEntry.Text) ? null : NameEntry.Text,
                 Faculty = FacultyPicker.SelectedItem?.ToString(),
                 Specialization = SpecializationPicker.SelectedItem?.ToString(),
                 Group = GroupPicker.SelectedItem?.ToString(),
-                Discipline = DisciplinePicker.SelectedItem?.ToString()
+                //Discipline = DisciplinePicker.SelectedItem?.ToString()
             };
         }
 
 
         private void OnSearchButtonClicked(object sender, EventArgs e)
         {
-            if (currentStrategy == null)
-            {
-                DisplayAlert("Помилка", "Оберіть стратегію обробки!", "OK");
-                return;
-            }
-
-            var parameters = GetSearchParameters();
-
-            try
-            {
-                currentStrategy.Parse(xmlPath, parameters);
-            }
-            catch (Exception ex)
-            {
-                DisplayAlert("Помилка", $"Сталася помилка під час обробки: {ex.Message}", "OK");
-            }
+            currentStrategy = (IXmlParsing)StrategyPicker.SelectedItem;
+            currentStrategy.Parse(xmlPath, GetSearchParameters());
+            DisplayResults("resPath.xml");
         }
 
+        private void DisplayResults(string xmlPath)
+        {
+            ResultsLayout.Children.Clear();
 
+            if (File.Exists(xmlPath))
+            {
+                using (XmlReader reader = XmlReader.Create(xmlPath))
+                {
+                    StackLayout currentStudentLayout = null;
+
+                    while (reader.Read())
+                    {
+                        if (reader.NodeType == XmlNodeType.Element && reader.Name == "Student")
+                        {
+                            string fullName = reader.GetAttribute("fullName");
+                            string faculty = reader.GetAttribute("faculty");
+                            string department = reader.GetAttribute("department");
+                            string specialization = reader.GetAttribute("specialization");
+                            string group = reader.GetAttribute("group");
+
+                            currentStudentLayout = new StackLayout
+                            {
+                                Padding = new Thickness(10),
+                                Spacing = 5,
+                                BackgroundColor = Colors.LightGray
+                            };
+
+                            currentStudentLayout.Children.Add(new Label { Text = $"Name: {fullName}", FontAttributes = FontAttributes.Bold });
+                            currentStudentLayout.Children.Add(new Label { Text = $"Faculty: {faculty}" });
+                            currentStudentLayout.Children.Add(new Label { Text = $"Department: {department}" });
+                            currentStudentLayout.Children.Add(new Label { Text = $"Specialization: {specialization}" });
+                            currentStudentLayout.Children.Add(new Label { Text = $"Group: {group}" });
+                        }
+
+                        if (reader.NodeType == XmlNodeType.Element && reader.Name == "Discipline")
+                        {
+                            string disciplineName = reader.GetAttribute("Name");
+                            string grade = reader.GetAttribute("Grade");
+
+                            currentStudentLayout?.Children.Add(new Label { Text = $"Discipline: {disciplineName}, Grade: {grade}" });
+                        }
+
+                        if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "Student" && currentStudentLayout != null)
+                        {
+                            ResultsLayout.Children.Add(new Frame
+                            {
+                                Content = currentStudentLayout,
+                                BorderColor = Colors.Black,
+                                CornerRadius = 5,
+                                Margin = new Thickness(5),
+                            });
+
+                            currentStudentLayout = null;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                ResultsLayout.Children.Add(new Label { Text = "No results found.", TextColor = Colors.Red });
+            }
+        }
 
 
 

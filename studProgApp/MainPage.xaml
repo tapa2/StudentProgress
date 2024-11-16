@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+﻿<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="studProgApp.MainPage"
              Title=""
@@ -7,8 +6,7 @@
 
     <Grid Padding="10">
         <!-- Контейнер для кнопок зверху по центру-->
-        <StackLayout  HorizontalOptions="Center" Orientation="Horizontal" VerticalOptions="Start">
-
+        <StackLayout HorizontalOptions="Center" Orientation="Horizontal" VerticalOptions="Start">
             <!-- Кнопка "Інформація" -->
             <Button 
                 Text="Інформація"
@@ -25,7 +23,7 @@
                 Margin="5"
                 BackgroundColor="LightGrey"/>
 
-            <!-- Кнопка "Обрати файл" -->
+            <!-- Кнопка "Вийти з програми" -->
             <Button 
                 Text="Вийти з програми"
                 x:Name="QuitButton"
@@ -34,10 +32,8 @@
                 BackgroundColor="LightGrey"/>
         </StackLayout>
 
-        <StackLayout x:Name="filters" IsVisible="false" Margin="0, 60, 0, 0" >
-            <Grid 
-                RowSpacing="40"
-                ColumnSpacing="30">
+        <StackLayout x:Name="filters" IsVisible="false" Margin="0, 60, 0, 0">
+            <Grid RowSpacing="40" ColumnSpacing="30">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
@@ -49,55 +45,35 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-
-                <!-- Поле для введення імені та прізвища з назвою фільтру -->
+                <!-- Поля для фільтрації -->
                 <StackLayout Grid.Row="0" Grid.Column="0" WidthRequest="200" HeightRequest="65">
                     <Label Text="Ім'я та прізвище" TextColor="LightGrey" Margin="0, 0, 0, 10" />
                     <Entry x:Name="NameEntry" BackgroundColor="LightGrey" TextColor="Black" />
                 </StackLayout>
-
                 <Picker x:Name="FacultyPicker" 
                         Title="Факультет"
-                        Grid.Row="0" 
-                        Grid.Column="1"
-                        WidthRequest="170"
-                        HeightRequest="65"
-                        BackgroundColor="LightGrey"
-                        TextColor="Black"/>
-                
+                        Grid.Row="0" Grid.Column="1"
+                        WidthRequest="170" HeightRequest="65"
+                        BackgroundColor="LightGrey" TextColor="Black"/>
                 <Picker x:Name="SpecializationPicker" 
                         Title="Спеціальність"
-                        Grid.Row="0" 
-                        Grid.Column="2"
-                        WidthRequest="170"
-                        HeightRequest="65"
-                        BackgroundColor="LightGrey"
-                        TextColor="Black"/>
-                
+                        Grid.Row="0" Grid.Column="2"
+                        WidthRequest="170" HeightRequest="65"
+                        BackgroundColor="LightGrey" TextColor="Black"/>
                 <Picker x:Name="GroupPicker" 
                         Title="Група"
-                        Grid.Row="0" 
-                        Grid.Column="3"
-                        WidthRequest="170"
-                        HeightRequest="65"
-                        BackgroundColor="LightGrey"
-                        TextColor="Black"/>
-
+                        Grid.Row="0" Grid.Column="3"
+                        WidthRequest="170" HeightRequest="65"
+                        BackgroundColor="LightGrey" TextColor="Black"/>
                 <Picker x:Name="DisciplinePicker" 
                         Title="Предмет"
-                        Grid.Row="0" 
-                        Grid.Column="4"
-                        WidthRequest="170"
-                        HeightRequest="65"
-                        BackgroundColor="LightGrey"
-                        TextColor="Black"/>
-
+                        Grid.Row="0" Grid.Column="4"
+                        WidthRequest="170" HeightRequest="65"
+                        BackgroundColor="LightGrey" TextColor="Black"/>
             </Grid>
 
-            <Grid
-                Margin="0, 10, 0, 0"
-                RowSpacing="40"
-                ColumnSpacing="30">
+            <!-- Кнопки для управління -->
+            <Grid Margin="0, 10, 0, 0" RowSpacing="40" ColumnSpacing="30">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
@@ -106,16 +82,15 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions> 
-                
+                </Grid.ColumnDefinitions>
+
                 <Picker x:Name="StrategyPicker"
                         Title="Тип стратегії" 
                         BackgroundColor="LightGrey" 
                         TextColor="Black" 
                         Grid.Row="0" 
                         Grid.Column="0" 
-                        WidthRequest="200"
-                        HeightRequest="65">
+                        WidthRequest="200" HeightRequest="65">
                     <Picker.ItemsSource>
                         <x:Array Type="{x:Type x:String}">
                             <x:String>SAX</x:String>
@@ -125,55 +100,29 @@
                     </Picker.ItemsSource>
                     <Picker.SelectedIndex>0</Picker.SelectedIndex>
                 </Picker>
-
-
-
-                <!-- x:Name="SearchButton" 
-                Clicked="OnQuitButtonClicked" -->
-                <Button 
-                    Text="Пошук"
-                    Margin="5"
-                    BackgroundColor="LightGrey"
-                    WidthRequest="200"
-                    Grid.Row="0" 
-                    Grid.Column="1" 
-                    HeightRequest="40"
-                    VerticalOptions="End"/>
-
-                
-                <!--x:Name="ParsingToHtml"
-                Clicked="OnParsingToHtmlClicked"-->
-                <Button 
-                    Text="Переформатувати в HTML"
-                    Margin="5"
-                    BackgroundColor="LightGrey"
-                    Grid.Row="0" 
-                    Grid.Column="2" 
-                    WidthRequest="250"
-                    HeightRequest="40"
-                    VerticalOptions="End"/>
-
-                <Button 
-                    x:Name="UpdateFiltrsBtn"
-                    Clicked="OnUpdateFiltrsBtnClicked"
-                    Text="Очистити"
-                    Margin="5"
-                    BackgroundColor="LightGrey"
-                    Grid.Row="0" 
-                    Grid.Column="3"                     
-                    WidthRequest="200"
-                    HeightRequest="40"
-                    VerticalOptions="End"/>
+                <Button Text="Пошук"
+                        x:Name="SearchButton" 
+                        Clicked="OnSearchButtonClicked"
+                        Margin="5"
+                        BackgroundColor="LightGrey"
+                        WidthRequest="200" Grid.Row="0" Grid.Column="1"
+                        HeightRequest="40" VerticalOptions="End"/>
+                <Button Text="Переформатувати в HTML"
+                        Margin="5" BackgroundColor="LightGrey"
+                        Grid.Row="0" Grid.Column="2" 
+                        WidthRequest="250" HeightRequest="40" VerticalOptions="End"/>
+                <Button x:Name="UpdateFiltrsBtn"
+                        Clicked="OnUpdateFiltrsBtnClicked"
+                        Text="Очистити"
+                        Margin="5" BackgroundColor="LightGrey"
+                        Grid.Row="0" Grid.Column="3" 
+                        WidthRequest="200" HeightRequest="40" VerticalOptions="End"/>
             </Grid>
         </StackLayout>
-        
-        
-        
-        
-        
-        
-        
-        
+
+        <!-- Контейнер для результатів -->
+        <ScrollView Margin="0, 150, 0, 10">
+            <StackLayout x:Name="ResultsLayout" Padding="10" />
+        </ScrollView>
     </Grid>
 </ContentPage>
-

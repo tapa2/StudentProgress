@@ -8,7 +8,7 @@ namespace studProgApp.ParsingStrategy
 {
     public interface IXmlParsing
     {
-        void Parse(string xmlPath, SearchParameters parameters);
+        void Parse(string xmlPath, Student parameters);
     }
 
 }
