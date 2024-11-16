@@ -4,11 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace studProgApp
+namespace studProgApp.ParsingStrategy
 {
-    internal interface IXmlParsingStrategy
+    public interface IXmlParsing
     {
-        void Parse(string filePath);
+        void Parse(string xmlPath);
     }
 }
-    
