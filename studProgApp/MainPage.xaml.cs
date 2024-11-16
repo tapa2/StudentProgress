@@ -1,4 +1,5 @@
-﻿using System.Xml;
+﻿using studProgApp.ParsingStrategy;
+using System.Xml;
 using System.Xml.Linq;
 
 
@@ -6,7 +7,8 @@ namespace studProgApp
 {
     public partial class MainPage : ContentPage
     {
-        string _faculty = "";
+        private IXmlParsing currentStrategy;
+        private string xmlPath;
 
         public MainPage()
         {
@@ -14,6 +16,29 @@ namespace studProgApp
         }
 
 
+        private async void OnSelectFileButtonClicked(object sender, EventArgs e)
+        {
+
+            var result = await FilePicker.PickAsync(new PickOptions
+            {
+                FileTypes = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>> {
+                { DevicePlatform.Android, new[] { ".xml" } },
+                { DevicePlatform.iOS, new[] { ".xml" } },
+                { DevicePlatform.WinUI, new[] { ".xml" } },
+            }),
+                PickerTitle = "Виберіть XML файл"
+            });
+
+            if (result != null)
+            {
+                await DisplayAlert("Файл обрано", $"Вибрано файл: {result.FileName}", "ОК");
+                xmlPath = result.FileName;
+                XDocument xmlDoc = XDocument.Load(result.FullPath);
+                LoadPickers(xmlDoc);
+                filters.IsVisible = true;
+
+            }
+        }
 
         private async void OnInfoButtonClicked(object sender, EventArgs e)
         {
@@ -73,6 +98,41 @@ namespace studProgApp
             }
         }
 
+        private SearchParameters GetSearchParameters()
+        {
+            return new SearchParameters
+            {
+                Name = string.IsNullOrWhiteSpace(NameEntry.Text) ? null : NameEntry.Text,
+                Faculty = FacultyPicker.SelectedItem?.ToString(),
+                Specialization = SpecializationPicker.SelectedItem?.ToString(),
+                Group = GroupPicker.SelectedItem?.ToString(),
+                Discipline = DisciplinePicker.SelectedItem?.ToString()
+            };
+        }
+
+
+        private void OnSearchButtonClicked(object sender, EventArgs e)
+        {
+            if (currentStrategy == null)
+            {
+                DisplayAlert("Помилка", "Оберіть стратегію обробки!", "OK");
+                return;
+            }
+
+            var parameters = GetSearchParameters();
+
+            try
+            {
+                currentStrategy.Parse(xmlPath, parameters);
+            }
+            catch (Exception ex)
+            {
+                DisplayAlert("Помилка", $"Сталася помилка під час обробки: {ex.Message}", "OK");
+            }
+        }
+
+
+
 
 
 
@@ -91,31 +151,6 @@ namespace studProgApp
         {
             UpdateFilters();
         }
-
-        private async void OnSelectFileButtonClicked(object sender, EventArgs e)
-        {
-
-            var result = await FilePicker.PickAsync(new PickOptions
-            {
-                FileTypes = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>> {
-                { DevicePlatform.Android, new[] { ".xml" } },
-                { DevicePlatform.iOS, new[] { ".xml" } },
-                { DevicePlatform.WinUI, new[] { ".xml" } },
-            }),
-                PickerTitle = "Виберіть XML файл"
-            });
-
-            if (result != null)
-            {
-                await DisplayAlert("Файл обрано", $"Вибрано файл: {result.FileName}", "ОК");
-                XDocument xmlDoc = XDocument.Load(result.FullPath);
-                LoadPickers(xmlDoc);
-                filters.IsVisible = true;
-
-            }
-        }
-
-
 
 
         private async void OnQuitButtonClicked(object sender, EventArgs e)

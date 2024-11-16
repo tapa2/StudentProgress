@@ -108,7 +108,7 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions> 
                 
-                <Picker x:Name="StrategyPicker" 
+                <Picker x:Name="StrategyPicker"
                         Title="Тип стратегії" 
                         BackgroundColor="LightGrey" 
                         TextColor="Black" 
