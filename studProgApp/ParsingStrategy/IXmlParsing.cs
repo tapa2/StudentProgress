@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace studProgApp.ParsingStrategy
 {
     public interface IXmlParsing
     {
-        void Parse(string xmlPath, Student parameters);
+        XDocument Search(string xmlPath, Student parameters);
     }
 
 }

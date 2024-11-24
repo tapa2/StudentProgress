@@ -2,100 +2,49 @@
 using System.Runtime.Serialization;
 using System.Xml;
 using System.Xml.Linq;
+using System.Xml.Xsl;
 
 
 namespace studProgApp
 {
+
+    
+
     public partial class MainPage : ContentPage
     {
+
+        private string tempResultFile = "";
         private IXmlParsing currentStrategy;
-        private string xmlPath;
+        private string inputXmlPath;
+        private readonly MainController _controller;
+        private XDocument resultsXmlPath;
 
         public MainPage()
         {
             InitializeComponent();
+            _controller = new MainController(new XmlProcessingService());
         }
+
 
 
         private async void OnSelectFileButtonClicked(object sender, EventArgs e)
         {
-
-            var result = await FilePicker.PickAsync(new PickOptions
+            try
             {
-                FileTypes = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>> {
-                { DevicePlatform.Android, new[] { ".xml" } },
-                { DevicePlatform.iOS, new[] { ".xml" } },
-                { DevicePlatform.WinUI, new[] { ".xml" } },
-            }),
-                PickerTitle = "Виберіть XML файл"
-            });
+                // Завантаження даних через Controller
+                var pickerData = await _controller.LoadDataAsync();
 
-            if (result != null)
-            {
-                await DisplayAlert("Файл обрано", $"Вибрано файл: {result.FileName}", "ОК");
-                xmlPath = result.FileName;
-                XDocument xmlDoc = XDocument.Load(result.FullPath);
-                LoadPickers(xmlDoc);
+                // Завантажуємо дані у фільтри
+                LoadPickers(pickerData);
+
+                // Виводимо повідомлення про файл
+                inputXmlPath = _controller.GetFilePath() ?? "Шлях відсутній";
+                await DisplayAlert("Файл обрано", $"Вибрано файл: {inputXmlPath}", "OK");
                 filters.IsVisible = true;
-
             }
-        }
-
-        private async void OnInfoButtonClicked(object sender, EventArgs e)
-        {
-            await DisplayAlert("Інформація", "Ця програма дозволяє аналізувати XML-файли та перетворювати їх у HTML.", "ОК");
-        }
-
-        private void LoadPickers(XDocument xmlDoc)
-        {
-            // Отримуємо факультети
-            var facultyNames = xmlDoc.Descendants("student")
-                                     .Attributes("faculty")
-                                     .Select(x => x.Value)
-                                     .Distinct()
-                                     .ToList();
-            FacultyPicker.Items.Clear();
-            foreach (var faculty in facultyNames)
+            catch (Exception ex)
             {
-                FacultyPicker.Items.Add(faculty);
-            }
-
-            // Отримуємо спеціальності
-            var specializationNames = xmlDoc.Descendants("student")
-                                             .Attributes("specialization")
-                                             .Select(x => x.Value)
-                                             .Distinct()
-                                             .ToList();
-            SpecializationPicker.Items.Clear();
-            foreach (var specialization in specializationNames)
-            {
-                SpecializationPicker.Items.Add(specialization);
-            }
-
-            // Отримуємо групи
-            var groupNames = xmlDoc.Descendants("student")
-                                   .Attributes("group")
-                                   .Select(x => x.Value)
-                                   .Distinct()
-                                   .ToList();
-            GroupPicker.Items.Clear();
-            foreach (var group in groupNames)
-            {
-                GroupPicker.Items.Add(group);
-            }
-
-            // Отримуємо дисципліни
-            var disciplineNames = xmlDoc.Descendants("student")
-                                        .Descendants("Disciplines")
-                                        .Descendants("Discipline")
-                                        .Attributes("Name")
-                                        .Select(x => x.Value)
-                                        .Distinct()
-                                        .ToList();
-            DisciplinePicker.Items.Clear();
-            foreach (var discipline in disciplineNames)
-            {
-                DisciplinePicker.Items.Add(discipline);
+                await DisplayAlert("Помилка", $"Помилка: {ex.Message}", "ОК");
             }
         }
 
@@ -103,92 +52,48 @@ namespace studProgApp
         {
             return new Student
             {
-                Name = string.IsNullOrWhiteSpace(NameEntry.Text) ? null : NameEntry.Text,
-                Faculty = FacultyPicker.SelectedItem?.ToString(),
-                Specialization = SpecializationPicker.SelectedItem?.ToString(),
-                Group = GroupPicker.SelectedItem?.ToString(),
-                //Discipline = DisciplinePicker.SelectedItem?.ToString()
+                FullName = NamePicker.SelectedIndex != -1 ? NamePicker.SelectedItem.ToString() : null,
+                Faculty = FacultyPicker.SelectedIndex != -1 ? FacultyPicker.SelectedItem.ToString() : null,
+                Specialization = SpecializationPicker.SelectedIndex != -1 ? SpecializationPicker.SelectedItem.ToString() : null,
+                Group = GroupPicker.SelectedIndex != -1 ? GroupPicker.SelectedItem.ToString() : null,
+                Discipline = DisciplinePicker.SelectedIndex != -1 ? DisciplinePicker.SelectedItem.ToString() : null,
+                MinMark = MinMarkPicker.SelectedIndex != -1 ? int.Parse(MinMarkPicker.SelectedItem.ToString()) : null,
+                MaxMark = MaxMarkPicker.SelectedIndex != -1 ? int.Parse(MaxMarkPicker.SelectedItem.ToString()) : null
             };
         }
 
-
-        private void OnSearchButtonClicked(object sender, EventArgs e)
+        private void LoadPickers(Dictionary<string, List<string>> pickerData)
         {
-            currentStrategy = (IXmlParsing)StrategyPicker.SelectedItem;
-            currentStrategy.Parse(xmlPath, GetSearchParameters());
-            DisplayResults("resPath.xml");
+            NamePicker.ItemsSource = pickerData["Names"];
+            FacultyPicker.ItemsSource = pickerData["Faculties"];
+            SpecializationPicker.ItemsSource = pickerData["Specializations"];
+            GroupPicker.ItemsSource = pickerData["Groups"];
+            DisciplinePicker.ItemsSource = pickerData["Disciplines"];
+
+            var grades = pickerData["Grades"];
+            MinMarkPicker.ItemsSource = grades;
+            MaxMarkPicker.ItemsSource = grades;
+
+            MinMarkPicker.SelectedIndex = 0;
+            MaxMarkPicker.SelectedIndex = grades.Count - 1;
         }
 
-        private void DisplayResults(string xmlPath)
+
+
+
+
+
+        private async void OnInfoButtonClicked(object sender, EventArgs e)
         {
-            ResultsLayout.Children.Clear();
-
-            if (File.Exists(xmlPath))
-            {
-                using (XmlReader reader = XmlReader.Create(xmlPath))
-                {
-                    StackLayout currentStudentLayout = null;
-
-                    while (reader.Read())
-                    {
-                        if (reader.NodeType == XmlNodeType.Element && reader.Name == "Student")
-                        {
-                            string fullName = reader.GetAttribute("fullName");
-                            string faculty = reader.GetAttribute("faculty");
-                            string department = reader.GetAttribute("department");
-                            string specialization = reader.GetAttribute("specialization");
-                            string group = reader.GetAttribute("group");
-
-                            currentStudentLayout = new StackLayout
-                            {
-                                Padding = new Thickness(10),
-                                Spacing = 5,
-                                BackgroundColor = Colors.LightGray
-                            };
-
-                            currentStudentLayout.Children.Add(new Label { Text = $"Name: {fullName}", FontAttributes = FontAttributes.Bold });
-                            currentStudentLayout.Children.Add(new Label { Text = $"Faculty: {faculty}" });
-                            currentStudentLayout.Children.Add(new Label { Text = $"Department: {department}" });
-                            currentStudentLayout.Children.Add(new Label { Text = $"Specialization: {specialization}" });
-                            currentStudentLayout.Children.Add(new Label { Text = $"Group: {group}" });
-                        }
-
-                        if (reader.NodeType == XmlNodeType.Element && reader.Name == "Discipline")
-                        {
-                            string disciplineName = reader.GetAttribute("Name");
-                            string grade = reader.GetAttribute("Grade");
-
-                            currentStudentLayout?.Children.Add(new Label { Text = $"Discipline: {disciplineName}, Grade: {grade}" });
-                        }
-
-                        if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "Student" && currentStudentLayout != null)
-                        {
-                            ResultsLayout.Children.Add(new Frame
-                            {
-                                Content = currentStudentLayout,
-                                BorderColor = Colors.Black,
-                                CornerRadius = 5,
-                                Margin = new Thickness(5),
-                            });
-
-                            currentStudentLayout = null;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                ResultsLayout.Children.Add(new Label { Text = "No results found.", TextColor = Colors.Red });
-            }
+            await DisplayAlert("Інформація", "Ця програма дозволяє аналізувати XML-файли та перетворювати їх у HTML.", "ОК");
         }
-
 
 
 
 
         private void UpdateFilters()
         {
-            NameEntry.Text = string.Empty;
+            NamePicker.SelectedItem = null;
             FacultyPicker.SelectedItem = null;
             SpecializationPicker.SelectedItem = null;
             GroupPicker.SelectedItem = null;
@@ -200,6 +105,205 @@ namespace studProgApp
         {
             UpdateFilters();
         }
+
+        public void DisplayResults(XDocument xmlDoc)
+        {
+            try
+            {
+                // Завантаження студентів
+                var students = xmlDoc.Descendants("Student"); // Виправлено регістр
+
+                // Очищення старих результатів перед додаванням нових
+                StudentsLayout.Children.Clear();
+
+                // Перебір студентів і додавання їх даних
+                foreach (var student in students)
+                {
+                    // Отримуємо атрибути студента
+                    var fullName = student.Attribute("fullName")?.Value ?? "Невідомо";
+                    var faculty = student.Attribute("faculty")?.Value ?? "Невідомо";
+                    var specialization = student.Attribute("specialization")?.Value ?? "Невідомо";
+                    var group = student.Attribute("group")?.Value ?? "Невідомо";
+
+                    // Створення віконечка (Frame) для студента
+                    var studentFrame = new Frame
+                    {
+                        Padding = new Thickness(10),
+                        Margin = new Thickness(0, 10),
+                        CornerRadius = 5,
+                        BackgroundColor = Color.FromArgb("#1D1D1D"),
+                        Content = new StackLayout
+                        {
+                            Children = {
+                        new Label { Text = $"ПІБ: {fullName}", TextColor = Colors.White },
+                        new Label { Text = $"Факультет: {faculty}", TextColor = Colors.White },
+                        new Label { Text = $"Спеціальність: {specialization}", TextColor = Colors.White },
+                        new Label { Text = $"Група: {group}", TextColor = Colors.White }
+                    }
+                        }
+                    };
+
+                    // Додаємо Frame до основного контейнера
+                    StudentsLayout.Children.Add(studentFrame);
+
+                    var successHeader = new Label
+                    {
+                        Text = "Успішність:",
+                        TextColor = Colors.White,
+                        FontAttributes = FontAttributes.Bold
+                    };
+                    ((StackLayout)studentFrame.Content).Children.Add(successHeader);
+
+                    // Перебір дисциплін і додавання їх до результату
+                    var disciplines = student.Elements("Discipline"); // Без "Disciplines", дисципліни зберігаються напряму
+                    if (disciplines != null)
+                    {
+                        foreach (var discipline in disciplines)
+                        {
+                            var disciplineName = discipline.Attribute("Name")?.Value ?? "Невідомий предмет";
+                            var grade = discipline.Attribute("Grade")?.Value ?? "0";
+
+                            var disciplineLabel = new Label
+                            {
+                                Text = $"\t{disciplineName}: {grade}",
+                                TextColor = Colors.White
+                            };
+
+                            // Додаємо дисципліну до Frame
+                            ((StackLayout)studentFrame.Content).Children.Add(disciplineLabel);
+                        }
+                    }
+                }
+
+                // Робимо ScrollView видимим
+                StudentsScrollView.IsVisible = true;
+            }
+            catch (Exception ex)
+            {
+                // Обробка помилок, наприклад, якщо файл не знайдений
+                Console.WriteLine($"Помилка при завантаженні файлу: {ex.Message}");
+            }
+        }
+
+
+        private void OnSearchButtonClicked(object sender, EventArgs e)
+        {
+            IXmlParsing? parser = null;
+
+            if (StrategyPicker.SelectedIndex == 0)
+            {
+                parser = new SaxXmlSearch();
+            }
+            else if (StrategyPicker.SelectedIndex == 1)
+            {
+                parser = new DomXmlSearch();
+            }
+            else if (StrategyPicker.SelectedIndex == 2)
+            {
+                parser = new LinqToXmlSearch();
+            }
+
+            if (parser == null)
+            {
+                DisplayAlert("Помилка", "Оберіть стратегію парсингу.", "ОК");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(inputXmlPath))
+            {
+                DisplayAlert("Помилка", "Шлях до файлу не вказано.", "ОК");
+                return;
+            }
+
+            try
+            {
+                var parameters = GetSearchParameters();
+                resultsXmlPath = parser.Search(inputXmlPath, parameters);
+                DisplayResults(resultsXmlPath);
+            }
+            catch (Exception ex)
+            {
+                DisplayAlert("Помилка", $"Помилка під час пошуку: {ex.Message}", "ОК");
+            }
+        }
+
+
+        public class HtmlTransformer
+        {
+            public void TransformXmlToHtml(XDocument xmlDocument, string xslFilePath, string outputHtmlPath)
+            {
+                try
+                {
+                    // Логування
+                    Console.WriteLine($"Трансформація XML в HTML. Шлях до XSL: {xslFilePath}");
+
+                    // Перетворення XDocument у XmlReader
+                    using (var xmlReader = xmlDocument.CreateReader())
+                    {
+                        XslCompiledTransform xslTransform = new XslCompiledTransform();
+
+                        // Перевірка існування XSL-файлу
+                        if (!File.Exists(xslFilePath))
+                        {
+                            throw new FileNotFoundException($"XSL-файл не знайдено: {xslFilePath}");
+                        }
+
+                        xslTransform.Load(xslFilePath);
+
+                        // Виконання трансформації
+                        using (var writer = new StreamWriter(outputHtmlPath))
+                        {
+                            xslTransform.Transform(xmlReader, null, writer);
+                        }
+                    }
+
+                    Console.WriteLine($"HTML-файл успішно створено за адресою: {outputHtmlPath}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Сталася помилка при трансформації: {ex.Message}");
+                    throw; // Повторне кидання винятку
+                }
+            }
+        }
+
+
+
+
+        private void OnTransformToHtmlClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                // Відносний шлях до XSL
+                string xslFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "template.xsl");
+                DisplayAlert("Результат", $"{xslFilePath}", "OK");
+
+                // Шлях для збереження HTML
+                string outputHtmlPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "searchResults.html");
+
+                // Перевірка результатів
+                if (resultsXmlPath == null || !resultsXmlPath.Root.HasElements)
+                {
+                    DisplayAlert("Помилка", "Результати пошуку відсутні або порожні!", "OK");
+                    return;
+                }
+
+
+                // Виконання трансформації
+                var transformer = new HtmlTransformer();
+                transformer.TransformXmlToHtml(resultsXmlPath, xslFilePath, outputHtmlPath);
+
+
+
+                DisplayAlert("Результат", $"HTML-файл створено: {outputHtmlPath}", "OK");
+            }
+            catch (Exception ex)
+            {
+                DisplayAlert("Помилка", $"Не вдалося створити HTML-файл: {ex.Message}", "OK");
+            }
+        }
+
+
 
 
         private async void OnQuitButtonClicked(object sender, EventArgs e)
