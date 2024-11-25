@@ -276,7 +276,6 @@ namespace studProgApp
             {
                 // Відносний шлях до XSL
                 string xslFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "template.xsl");
-                DisplayAlert("Результат", $"{xslFilePath}", "OK");
 
                 // Шлях для збереження HTML
                 string outputHtmlPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "searchResults.html");
